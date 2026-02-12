@@ -12,3 +12,5 @@ export const DEFAULT_CATEGORIES: Category[] = [
 
 export const STORAGE_KEY_EXPENSES = 'xpense_data_v1';
 export const STORAGE_KEY_CATEGORIES = 'xpense_categories_v1';
+
+export const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
