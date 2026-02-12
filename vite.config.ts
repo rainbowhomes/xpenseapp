@@ -5,11 +5,16 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   // Use './' to make all paths relative to the index.html location
+  // This is crucial for GitHub Pages sub-folders
   base: './', 
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-    // Ensure the manifest is generated and placed correctly
     manifest: true,
-  }
+    rollupOptions: {
+      input: {
+        main: './index.html',
+      },
+    },
+  },
 });
