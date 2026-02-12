@@ -1,9 +1,10 @@
 {
   "name": "Xpense - Daily Tracker",
   "short_name": "Xpense",
-  "start_url": "./",
-  "scope": "./",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#f8fafc",
   "theme_color": "#2563eb",
   "description": "Daily expense tracker with category-based charts and data persistence.",
