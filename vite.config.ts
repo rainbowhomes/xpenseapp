@@ -5,8 +5,12 @@ import react from '@vitejs/plugin-react';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: './', // Ensures assets are loaded correctly on GitHub Pages
+  // Use './' to make all paths relative to the index.html location
+  base: './', 
   build: {
     outDir: 'dist',
+    assetsDir: 'assets',
+    // Ensure the manifest is generated and placed correctly
+    manifest: true,
   }
 });
