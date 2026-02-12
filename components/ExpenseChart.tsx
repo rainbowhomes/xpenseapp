@@ -136,7 +136,7 @@ const ExpenseChart: React.FC<ExpenseChartProps> = ({ expenses, categories }) => 
             ))}
           </Pie>
           <Tooltip 
-            formatter={(value: number) => [`$${value.toLocaleString()}`, 'Spent']}
+            formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Spent']}
             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
           />
           <Legend 
