@@ -14,7 +14,7 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({ total, count }) => {
         <TrendingUp className="absolute -right-2 -bottom-2 text-white/10" size={80} />
         <div className="relative z-10">
           <p className="text-blue-100 text-xs font-medium mb-1">Total Spent</p>
-          <p className="text-2xl font-bold">${total.toLocaleString()}</p>
+          <p className="text-2xl font-bold">₹{total.toLocaleString()}</p>
         </div>
       </div>
       <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden">
