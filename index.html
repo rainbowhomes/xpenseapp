@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#2563eb">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="./manifest.json">
     <title>Xpense - Daily Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,7 +19,7 @@
             overscroll-behavior-y: contain;
             background-color: #f8fafc;
         }
-        /* Custom scrollbar for a cleaner mobile look */
+        /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 4px;
         }
@@ -30,7 +30,7 @@
             background: #cbd5e1;
             border-radius: 10px;
         }
-        /* Safe area padding for modern notched phones */
+        /* Safe area padding */
         .safe-area-bottom {
             padding-bottom: env(safe-area-inset-bottom);
         }
@@ -51,7 +51,7 @@
 </head>
 <body class="bg-slate-50 text-slate-900 antialiased overflow-x-hidden">
     <div id="root"></div>
-    <!-- Vite entry point using relative path -->
-    <script type="module" src="./index.tsx"></script>
+    <!-- Vite entry point: In source, use absolute path for Vite to find the file -->
+    <script type="module" src="/index.tsx"></script>
 </body>
 </html>
