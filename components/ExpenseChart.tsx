@@ -1,20 +1,20 @@
 
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { ChevronDown } from 'lucide-react';
 import { Expense, Category, ChartData } from '../types';
-
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+import { MONTH_NAMES } from '../constants';
 
 interface ExpenseChartProps {
   expenses: Expense[];
   categories: Category[];
+  selectedMonth: number;
+  selectedYear: number;
+  isAllTime: boolean;
+  onSelectionChange: (month: number, year: number, isAllTime: boolean) => void;
 }
 
-const ExpenseChart: React.FC<ExpenseChartProps> = ({ expenses, categories }) => {
-  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
-
+const ExpenseChart: React.FC<ExpenseChartProps> = ({ expenses, categories, selectedMonth, selectedYear, isAllTime, onSelectionChange }) => {
   const { monthYearOptions, filteredExpenses } = useMemo(() => {
     const options: { month: number; year: number }[] = [];
     const seen = new Set<string>();
@@ -38,16 +38,15 @@ const ExpenseChart: React.FC<ExpenseChartProps> = ({ expenses, categories }) => 
       return b.month - a.month;
     });
 
-    const filter = selectedMonth !== null && selectedYear !== null;
-    const filtered = filter
-      ? expenses.filter(e => {
+    const filtered = isAllTime
+      ? expenses
+      : expenses.filter(e => {
           const [y, m] = e.date.split('-').map(Number);
           return m === selectedMonth && y === selectedYear;
-        })
-      : expenses;
+        });
 
     return { monthYearOptions: options, filteredExpenses: filtered };
-  }, [expenses, selectedMonth, selectedYear]);
+  }, [expenses, selectedMonth, selectedYear, isAllTime]);
 
   const data: ChartData[] = useMemo(() => {
     const categoryTotals: Record<string, number> = {};
@@ -66,16 +65,6 @@ const ExpenseChart: React.FC<ExpenseChartProps> = ({ expenses, categories }) => 
     }).sort((a, b) => b.value - a.value);
   }, [filteredExpenses, categories]);
 
-  const hasInitialized = useRef(false);
-  useEffect(() => {
-    if (!hasInitialized.current && monthYearOptions.length > 0) {
-      hasInitialized.current = true;
-      const latest = monthYearOptions[0];
-      setSelectedMonth(latest.month);
-      setSelectedYear(latest.year);
-    }
-  }, [monthYearOptions]);
-
   if (expenses.length === 0) {
     return (
       <div className="h-48 flex items-center justify-center text-slate-400 text-sm italic">
@@ -89,16 +78,14 @@ const ExpenseChart: React.FC<ExpenseChartProps> = ({ expenses, categories }) => 
       <div className="flex items-center justify-between gap-2">
         <div className="relative flex-1">
           <select
-            value={selectedMonth !== null && selectedYear !== null ? `${selectedYear}-${selectedMonth}` : 'all'}
+            value={isAllTime ? 'all' : `${selectedYear}-${selectedMonth}`}
             onChange={(e) => {
               const v = e.target.value;
               if (v === 'all') {
-                setSelectedMonth(null);
-                setSelectedYear(null);
+                onSelectionChange(selectedMonth, selectedYear, true);
               } else {
                 const [y, m] = v.split('-').map(Number);
-                setSelectedMonth(m);
-                setSelectedYear(y);
+                onSelectionChange(m, y, false);
               }
             }}
             className="w-full appearance-none bg-slate-100 text-slate-800 font-semibold rounded-xl py-2.5 pl-4 pr-10 border-0 cursor-pointer text-sm focus:ring-2 focus:ring-blue-500/30"
