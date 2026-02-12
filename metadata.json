@@ -1,0 +1,5 @@
+{
+  "name": "Xpense - Daily Tracker",
+  "description": "A clean, modern expense tracker with category-based pie charts, automatic data persistence, and custom categories.",
+  "requestFramePermissions": []
+}
