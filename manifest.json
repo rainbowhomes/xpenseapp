@@ -1,8 +1,8 @@
 {
   "name": "Xpense - Daily Tracker",
   "short_name": "Xpense",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "/xpenseapp/",
+  "scope": "/xpenseapp/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#f8fafc",
