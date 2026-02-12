@@ -52,7 +52,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
             
             <div className="flex items-center gap-3">
               <span className="font-bold text-slate-900">
-                -${expense.amount.toLocaleString()}
+                -₹{expense.amount.toLocaleString()}
               </span>
               <button 
                 onClick={(e) => {
