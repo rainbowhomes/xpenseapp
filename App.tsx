@@ -154,9 +154,9 @@ const App: React.FC = () => {
                 selectedMonth={selectedMonth}
                 selectedYear={selectedYear}
                 isAllTime={isAllTime}
-                onSelectionChange={(month, year, allTime) => {
-                  setIsAllTime(allTime ?? false);
-                  if (!allTime && month != null && year != null) {
+                onSelectionChange={(month: number, year: number, allTime: boolean) => {
+                  setIsAllTime(allTime);
+                  if (!allTime) {
                     setSelectedMonth(month);
                     setSelectedYear(year);
                   }
