@@ -41,7 +41,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ categories, onClose, 
           <div className="space-y-1">
             <label className="text-xs font-bold text-slate-400 uppercase ml-1">Amount</label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
               <input 
                 type="number"
                 inputMode="decimal"
