@@ -2,7 +2,7 @@
 import React from 'react';
 import { TrendingUp, CreditCard, ChevronRight } from 'lucide-react';
 
-interface SummaryCardsProps {
+export interface SummaryCardsProps {
   total: number;
   count: number;
   periodLabel?: string;
@@ -20,7 +20,7 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({ total, count, periodLabel, 
         <TrendingUp className="absolute -right-2 -bottom-2 text-white/10" size={80} />
         <div className="relative z-10">
           <p className="text-blue-100 text-xs font-medium mb-1">Total Spent</p>
-          <p className="text-[10px] text-blue-200/90 font-medium mb-0.5">{periodLabel}</p>
+          {periodLabel != null && <p className="text-[10px] text-blue-200/90 font-medium mb-0.5">{periodLabel}</p>}
           <p className="text-2xl font-bold">₹{total.toLocaleString()}</p>
           {onTotalClick && (
             <p className="text-blue-200 text-[10px] font-medium mt-2 flex items-center gap-0.5">
