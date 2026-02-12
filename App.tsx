@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Plus, Trash2, PieChart as PieChartIcon, List, Settings, ChevronRight, Download, Upload } from 'lucide-react';
 import { Category, Expense } from './types';
-import { DEFAULT_CATEGORIES, STORAGE_KEY_EXPENSES, STORAGE_KEY_CATEGORIES } from './constants';
+import { DEFAULT_CATEGORIES, STORAGE_KEY_EXPENSES, STORAGE_KEY_CATEGORIES, MONTH_NAMES } from './constants';
 import Header from './components/Header';
 import SummaryCards from './components/SummaryCards';
 import ExpenseChart from './components/ExpenseChart';
@@ -11,11 +11,26 @@ import AddExpenseModal from './components/AddExpenseModal';
 import CategoryManager from './components/CategoryManager';
 
 const App: React.FC = () => {
+  const now = new Date();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'history' | 'settings'>('dashboard');
+  const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
+  const [isAllTime, setIsAllTime] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const filteredExpenses = useMemo(() => {
+    if (isAllTime) return expenses;
+    return expenses.filter(e => {
+      const [y, m] = e.date.split('-').map(Number);
+      return m === selectedMonth && y === selectedYear;
+    });
+  }, [expenses, selectedMonth, selectedYear, isAllTime]);
+
+  const filteredTotal = useMemo(() => filteredExpenses.reduce((sum, e) => sum + e.amount, 0), [filteredExpenses]);
+  const periodLabel = isAllTime ? 'All time' : `${MONTH_NAMES[selectedMonth - 1]} ${selectedYear}`;
 
   // Load data from LocalStorage
   useEffect(() => {
@@ -62,10 +77,6 @@ const App: React.FC = () => {
     }
     setCategories(prev => prev.filter(c => c.id !== id));
   };
-
-  const totalExpense = useMemo(() => {
-    return expenses.reduce((sum, e) => sum + e.amount, 0);
-  }, [expenses]);
 
   const handleExport = () => {
     const data = {
@@ -126,13 +137,31 @@ const App: React.FC = () => {
       <main className="px-4 py-6 space-y-6">
         {activeTab === 'dashboard' && (
           <>
-            <SummaryCards total={totalExpense} count={expenses.length} />
+            <SummaryCards 
+              total={filteredTotal} 
+              count={filteredExpenses.length} 
+              periodLabel={periodLabel}
+              onTotalClick={() => setActiveTab('history')}
+            />
             <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-100">
               <h2 className="text-lg font-semibold mb-4 text-slate-800 flex items-center gap-2">
                 <PieChartIcon size={20} className="text-blue-500" />
                 Spending Breakdown
               </h2>
-              <ExpenseChart expenses={expenses} categories={categories} />
+              <ExpenseChart 
+                expenses={expenses} 
+                categories={categories}
+                selectedMonth={selectedMonth}
+                selectedYear={selectedYear}
+                isAllTime={isAllTime}
+                onSelectionChange={(month, year, allTime) => {
+                  setIsAllTime(allTime ?? false);
+                  if (!allTime && month != null && year != null) {
+                    setSelectedMonth(month);
+                    setSelectedYear(year);
+                  }
+                }}
+              />
             </div>
             <div className="space-y-3">
                <div className="flex items-center justify-between">
@@ -145,7 +174,7 @@ const App: React.FC = () => {
                 </button>
               </div>
               <ExpenseList 
-                expenses={expenses.slice(0, 5)} 
+                expenses={filteredExpenses.slice(0, 5)} 
                 categories={categories} 
                 onDelete={deleteExpense} 
               />
@@ -155,9 +184,11 @@ const App: React.FC = () => {
 
         {activeTab === 'history' && (
           <div className="space-y-4">
-            <h2 className="text-xl font-bold text-slate-800">Transaction History</h2>
+            <h2 className="text-xl font-bold text-slate-800">
+              Transaction History {periodLabel && <span className="text-slate-500 font-normal text-base">({periodLabel})</span>}
+            </h2>
             <ExpenseList 
-              expenses={expenses} 
+              expenses={filteredExpenses} 
               categories={categories} 
               onDelete={deleteExpense} 
             />
