@@ -1,37 +1,61 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Check } from 'lucide-react';
 import { Category, Expense } from '../types';
 
 interface AddExpenseModalProps {
   categories: Category[];
+  initialExpense?: Expense | null;
   onClose: () => void;
   onSubmit: (expense: Omit<Expense, 'id'>) => void;
+  onUpdate?: (id: string, expense: Omit<Expense, 'id'>) => void;
 }
 
-const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ categories, onClose, onSubmit }) => {
+const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ categories, initialExpense, onClose, onSubmit, onUpdate }) => {
+  const isEdit = !!initialExpense;
   const [amount, setAmount] = useState('');
   const [categoryId, setCategoryId] = useState(categories[0]?.id || '');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
+  useEffect(() => {
+    if (initialExpense) {
+      setAmount(initialExpense.amount.toString());
+      setCategoryId(initialExpense.categoryId);
+      setDescription(initialExpense.description);
+      setDate(initialExpense.date);
+    } else {
+      setAmount('');
+      setCategoryId(categories[0]?.id || '');
+      setDescription('');
+      setDate(new Date().toISOString().split('T')[0]);
+    }
+  }, [initialExpense, categories]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!amount || !categoryId) return;
     
-    onSubmit({
+    const data = {
       amount: parseFloat(amount),
       categoryId,
       description,
       date,
-    });
+    };
+
+    if (isEdit && onUpdate) {
+      onUpdate(initialExpense.id, data);
+    } else {
+      onSubmit(data);
+    }
+    onClose();
   };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end justify-center px-4 pb-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
       <div className="w-full max-w-md bg-white rounded-t-[32px] p-6 shadow-2xl animate-in slide-in-from-bottom duration-300">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-slate-800">Add Expense</h2>
+          <h2 className="text-xl font-bold text-slate-800">{isEdit ? 'Edit Expense' : 'Add Expense'}</h2>
           <button onClick={onClose} className="p-2 bg-slate-100 rounded-full text-slate-500">
             <X size={20} />
           </button>
@@ -102,7 +126,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ categories, onClose, 
             className="w-full py-5 bg-blue-600 text-white font-bold rounded-2xl shadow-lg shadow-blue-100 flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
           >
             <Check size={20} />
-            Save Expense
+            {isEdit ? 'Update Expense' : 'Save Expense'}
           </button>
         </form>
       </div>
