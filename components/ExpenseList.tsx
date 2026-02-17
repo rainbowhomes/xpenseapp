@@ -1,15 +1,16 @@
 
 import React from 'react';
-import { Trash2, Calendar } from 'lucide-react';
+import { Trash2, Calendar, Pencil } from 'lucide-react';
 import { Expense, Category } from '../types';
 
 interface ExpenseListProps {
   expenses: Expense[];
   categories: Category[];
+  onEdit?: (expense: Expense) => void;
   onDelete: (id: string) => void;
 }
 
-const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelete }) => {
+const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onEdit, onDelete }) => {
   if (expenses.length === 0) {
     return (
       <div className="text-center py-10">
@@ -30,14 +31,18 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
             key={expense.id} 
             className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm active:bg-slate-50 transition-colors group"
           >
-            <div className="flex items-center gap-4">
+            <div 
+              className="flex items-center gap-4 flex-1 min-w-0"
+              onClick={() => onEdit?.(expense)}
+              role={onEdit ? 'button' : undefined}
+            >
               <div 
-                className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shadow-sm"
+                className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shadow-sm flex-shrink-0"
                 style={{ backgroundColor: `${category?.color}15`, color: category?.color }}
               >
                 {category?.icon || '📦'}
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="font-bold text-slate-800 leading-tight">{expense.description || category?.name}</p>
                 <div className="flex items-center gap-2 mt-1">
                     <span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider bg-slate-100 text-slate-500">
@@ -50,10 +55,21 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onDelet
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <span className="font-bold text-slate-900">
                 -₹{expense.amount.toLocaleString()}
               </span>
+              {onEdit && (
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(expense);
+                  }}
+                  className="p-2 text-slate-300 hover:text-blue-500 transition-colors"
+                >
+                  <Pencil size={18} />
+                </button>
+              )}
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
