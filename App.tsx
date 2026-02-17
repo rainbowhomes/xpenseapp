@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Plus, PieChart as PieChartIcon, List, Settings, ChevronRight, Download, Upload, FileSpreadsheet } from 'lucide-react';
 import { Category, Expense } from './types';
 import { DEFAULT_CATEGORIES, STORAGE_KEY_EXPENSES, STORAGE_KEY_CATEGORIES, MONTH_NAMES } from './constants';
-import { parseCsvToExpenses } from './utils/csvImport';
+import { parseCsvToExpenses } from './csvImport';
 import Header from './components/Header';
 import SummaryCards from './components/SummaryCards';
 import ExpenseChart from './components/ExpenseChart';
@@ -122,17 +122,17 @@ const App: React.FC = () => {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = (e: ProgressEvent<FileReader>) => {
       try {
         const content = e.target?.result as string;
-        const existingIds = new Set(expenses.map(e => e.id));
+        const existingIds = new Set(expenses.map((exp) => exp.id));
         const { expenses: newExpenses, result } = parseCsvToExpenses(content, categories, existingIds);
 
         if (result.errors.length > 0) {
           alert('CSV Import Issues:\n' + result.errors.join('\n') + (newExpenses.length > 0 ? '\n\nImported ' + result.imported + ' expenses. ' + result.skipped + ' rows skipped.' : ''));
         }
         if (newExpenses.length > 0) {
-          const withIds = newExpenses.map((e, i) => ({ ...e, id: `csv-${Date.now()}-${i}` }));
+          const withIds = newExpenses.map((exp: Omit<Expense, 'id'>, i: number) => ({ ...exp, id: `csv-${Date.now()}-${i}` }));
           setExpenses(prev => [...withIds, ...prev]);
           alert(`Imported ${result.imported} expenses from CSV. ${result.skipped} rows skipped (unmatched category or invalid data).`);
         } else if (result.errors.length === 0) {
@@ -222,7 +222,7 @@ const App: React.FC = () => {
               <ExpenseList 
                 expenses={filteredExpenses.slice(0, 5)} 
                 categories={categories}
-                onEdit={(exp) => setEditingExpense(exp)}
+                onEdit={(exp: Expense) => setEditingExpense(exp)}
                 onDelete={deleteExpense} 
               />
             </div>
@@ -237,7 +237,7 @@ const App: React.FC = () => {
             <ExpenseList 
               expenses={filteredExpenses} 
               categories={categories}
-              onEdit={(exp) => setEditingExpense(exp)}
+              onEdit={(exp: Expense) => setEditingExpense(exp)}
               onDelete={deleteExpense} 
             />
           </div>
