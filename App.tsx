@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Plus, Trash2, PieChart as PieChartIcon, List, Settings, ChevronRight, Download, Upload } from 'lucide-react';
+import { Plus, PieChart as PieChartIcon, List, Settings, ChevronRight, Download, Upload, FileSpreadsheet } from 'lucide-react';
 import { Category, Expense } from './types';
 import { DEFAULT_CATEGORIES, STORAGE_KEY_EXPENSES, STORAGE_KEY_CATEGORIES, MONTH_NAMES } from './constants';
+import { parseCsvToExpenses } from './utils/csvImport';
 import Header from './components/Header';
 import SummaryCards from './components/SummaryCards';
 import ExpenseChart from './components/ExpenseChart';
@@ -15,11 +16,13 @@ const App: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'history' | 'settings'>('dashboard');
   const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
   const [isAllTime, setIsAllTime] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const csvInputRef = useRef<HTMLInputElement>(null);
 
   const filteredExpenses = useMemo(() => {
     if (isAllTime) return expenses;
@@ -60,12 +63,21 @@ const App: React.FC = () => {
     setIsAddModalOpen(false);
   };
 
+  const updateExpense = (id: string, expense: Omit<Expense, 'id'>) => {
+    setExpenses(prev => prev.map(e => e.id === id ? { ...expense, id } : e));
+    setEditingExpense(null);
+  };
+
   const deleteExpense = (id: string) => {
     setExpenses(prev => prev.filter(e => e.id !== id));
   };
 
   const addCategory = (category: Category) => {
     setCategories(prev => [...prev, category]);
+  };
+
+  const updateCategory = (id: string, updates: Partial<Omit<Category, 'id'>>) => {
+    setCategories(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
   };
 
   const deleteCategory = (id: string) => {
@@ -99,6 +111,40 @@ const App: React.FC = () => {
 
   const handleImportClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleCsvImportClick = () => {
+    csvInputRef.current?.click();
+  };
+
+  const handleCsvFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const existingIds = new Set(expenses.map(e => e.id));
+        const { expenses: newExpenses, result } = parseCsvToExpenses(content, categories, existingIds);
+
+        if (result.errors.length > 0) {
+          alert('CSV Import Issues:\n' + result.errors.join('\n') + (newExpenses.length > 0 ? '\n\nImported ' + result.imported + ' expenses. ' + result.skipped + ' rows skipped.' : ''));
+        }
+        if (newExpenses.length > 0) {
+          const withIds = newExpenses.map((e, i) => ({ ...e, id: `csv-${Date.now()}-${i}` }));
+          setExpenses(prev => [...withIds, ...prev]);
+          alert(`Imported ${result.imported} expenses from CSV. ${result.skipped} rows skipped (unmatched category or invalid data).`);
+        } else if (result.errors.length === 0) {
+          alert('No valid expenses found in CSV. Ensure columns: Date, Expense Category, Amount. Category names must match your app categories.');
+        }
+      } catch (err) {
+        alert('Failed to parse CSV file.');
+        console.error(err);
+      }
+      if (csvInputRef.current) csvInputRef.current.value = '';
+    };
+    reader.readAsText(file);
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -175,7 +221,8 @@ const App: React.FC = () => {
               </div>
               <ExpenseList 
                 expenses={filteredExpenses.slice(0, 5)} 
-                categories={categories} 
+                categories={categories}
+                onEdit={(exp) => setEditingExpense(exp)}
                 onDelete={deleteExpense} 
               />
             </div>
@@ -189,7 +236,8 @@ const App: React.FC = () => {
             </h2>
             <ExpenseList 
               expenses={filteredExpenses} 
-              categories={categories} 
+              categories={categories}
+              onEdit={(exp) => setEditingExpense(exp)}
               onDelete={deleteExpense} 
             />
           </div>
@@ -200,7 +248,8 @@ const App: React.FC = () => {
             <h2 className="text-xl font-bold text-slate-800">Categories</h2>
             <CategoryManager 
               categories={categories} 
-              onAdd={addCategory} 
+              onAdd={addCategory}
+              onEdit={updateCategory}
               onDelete={deleteCategory} 
             />
             <div className="p-4 bg-slate-100 rounded-3xl space-y-3">
@@ -221,12 +270,26 @@ const App: React.FC = () => {
                     <Upload size={18} />
                     Import
                   </button>
+                  <button 
+                    onClick={handleCsvImportClick}
+                    className="flex items-center justify-center gap-2 py-3 bg-white text-violet-600 font-bold rounded-xl border border-violet-50 shadow-sm active:scale-95 transition-transform col-span-2"
+                  >
+                    <FileSpreadsheet size={18} />
+                    Import CSV
+                  </button>
                   <input 
                     type="file" 
                     ref={fileInputRef} 
                     className="hidden" 
                     accept=".json"
                     onChange={handleFileChange}
+                  />
+                  <input 
+                    type="file" 
+                    ref={csvInputRef} 
+                    className="hidden" 
+                    accept=".csv"
+                    onChange={handleCsvFileChange}
                   />
                 </div>
 
@@ -278,11 +341,13 @@ const App: React.FC = () => {
         </button>
       </nav>
 
-      {isAddModalOpen && (
+      {(isAddModalOpen || editingExpense) && (
         <AddExpenseModal 
-          categories={categories} 
-          onClose={() => setIsAddModalOpen(false)} 
-          onSubmit={addExpense} 
+          categories={categories}
+          initialExpense={editingExpense}
+          onClose={() => { setIsAddModalOpen(false); setEditingExpense(null); }} 
+          onSubmit={addExpense}
+          onUpdate={updateExpense}
         />
       )}
     </div>
