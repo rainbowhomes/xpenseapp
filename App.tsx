@@ -3,13 +3,94 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Plus, PieChart as PieChartIcon, List, Settings, ChevronRight, Download, Upload, FileSpreadsheet } from 'lucide-react';
 import { Category, Expense } from './types';
 import { DEFAULT_CATEGORIES, STORAGE_KEY_EXPENSES, STORAGE_KEY_CATEGORIES, MONTH_NAMES } from './constants';
-import { parseCsvToExpenses } from './csvImport';
 import Header from './components/Header';
 import SummaryCards from './components/SummaryCards';
 import ExpenseChart from './components/ExpenseChart';
 import ExpenseList from './components/ExpenseList';
 import AddExpenseModal from './components/AddExpenseModal';
 import CategoryManager from './components/CategoryManager';
+
+function parseDate(val: string): string | null {
+  const s = val.trim();
+  if (!s) return null;
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d.toISOString().split('T')[0];
+}
+
+function parseAmount(val: string): number | null {
+  const n = parseFloat(val.trim().replace(/[₹,$\s]/g, ''));
+  return isNaN(n) ? null : n;
+}
+
+function matchCategory(csvCat: string, categories: Category[]): Category | null {
+  const n = csvCat.trim().toLowerCase();
+  if (!n) return null;
+  for (const c of categories) {
+    if (c.name.toLowerCase() === n || c.name.toLowerCase().includes(n) || n.includes(c.name.toLowerCase())) return c;
+  }
+  return null;
+}
+
+function parseCsvToExpenses(
+  csvText: string,
+  categories: Category[]
+): { expenses: Omit<Expense, 'id'>[]; imported: number; skipped: number; errors: string[] } {
+  const lines = csvText.split(/\r?\n/).filter((line) => line.trim());
+  const result = { imported: 0, skipped: 0, errors: [] as string[] };
+  const DATE_ALIASES = ['date', 'dates', 'transaction date', 'transaction_date'];
+  const CATEGORY_ALIASES = ['category', 'categories', 'expense category', 'expense_category', 'type'];
+  const AMOUNT_ALIASES = ['amount', 'amounts', 'value', 'price', 'cost', 'expense', 'debit'];
+
+  if (lines.length < 2) {
+    result.errors.push('CSV must have a header row and at least one data row');
+    return { expenses: [], ...result };
+  }
+
+  const parseRow = (row: string): string[] => {
+    const out: string[] = [];
+    let cur = '';
+    let inQuotes = false;
+    for (let i = 0; i < row.length; i++) {
+      const c = row[i];
+      if (c === '"') inQuotes = !inQuotes;
+      else if (c === ',' && !inQuotes) { out.push(cur.trim()); cur = ''; }
+      else cur += c;
+    }
+    out.push(cur.trim());
+    return out;
+  };
+
+  const norm = (h: string) => h.trim().toLowerCase().replace(/[\s_-]+/g, ' ');
+  const findCol = (headers: string[], aliases: string[]): number => {
+    for (let i = 0; i < headers.length; i++) {
+      const n = norm(headers[i]);
+      for (const a of aliases) if (n.includes(a) || a.includes(n)) return i;
+    }
+    return -1;
+  };
+
+  const headers = parseRow(lines[0]);
+  const dateIdx = findCol(headers, DATE_ALIASES);
+  const catIdx = findCol(headers, CATEGORY_ALIASES);
+  const amtIdx = findCol(headers, AMOUNT_ALIASES);
+
+  if (dateIdx < 0) result.errors.push('Could not detect Date column');
+  if (catIdx < 0) result.errors.push('Could not detect Expense Category column');
+  if (amtIdx < 0) result.errors.push('Could not detect Amount column');
+  if (dateIdx < 0 || catIdx < 0 || amtIdx < 0) return { expenses: [], ...result };
+
+  const expenses: Omit<Expense, 'id'>[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = parseRow(lines[i]);
+    const dateVal = parseDate(cols[dateIdx] ?? '');
+    const amtVal = parseAmount(cols[amtIdx] ?? '');
+    const cat = matchCategory(cols[catIdx] ?? '', categories);
+    if (!dateVal || !amtVal || amtVal <= 0 || !cat) { result.skipped++; continue; }
+    expenses.push({ amount: amtVal, categoryId: cat.id, description: cols[catIdx] ?? '', date: dateVal });
+  }
+  result.imported = expenses.length;
+  return { expenses, ...result };
+}
 
 const App: React.FC = () => {
   const now = new Date();
@@ -125,17 +206,16 @@ const App: React.FC = () => {
     reader.onload = (e: ProgressEvent<FileReader>) => {
       try {
         const content = e.target?.result as string;
-        const existingIds = new Set(expenses.map((exp) => exp.id));
-        const { expenses: newExpenses, result } = parseCsvToExpenses(content, categories, existingIds);
+        const { expenses: newExpenses, imported, skipped, errors } = parseCsvToExpenses(content, categories);
 
-        if (result.errors.length > 0) {
-          alert('CSV Import Issues:\n' + result.errors.join('\n') + (newExpenses.length > 0 ? '\n\nImported ' + result.imported + ' expenses. ' + result.skipped + ' rows skipped.' : ''));
+        if (errors.length > 0) {
+          alert('CSV Import Issues:\n' + errors.join('\n') + (newExpenses.length > 0 ? '\n\nImported ' + imported + ' expenses. ' + skipped + ' rows skipped.' : ''));
         }
         if (newExpenses.length > 0) {
           const withIds = newExpenses.map((exp: Omit<Expense, 'id'>, i: number) => ({ ...exp, id: `csv-${Date.now()}-${i}` }));
           setExpenses(prev => [...withIds, ...prev]);
-          alert(`Imported ${result.imported} expenses from CSV. ${result.skipped} rows skipped (unmatched category or invalid data).`);
-        } else if (result.errors.length === 0) {
+          alert(`Imported ${imported} expenses from CSV. ${skipped} rows skipped (unmatched category or invalid data).`);
+        } else if (errors.length === 0) {
           alert('No valid expenses found in CSV. Ensure columns: Date, Expense Category, Amount. Category names must match your app categories.');
         }
       } catch (err) {
@@ -152,7 +232,7 @@ const App: React.FC = () => {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = (e: ProgressEvent<FileReader>) => {
       try {
         const content = e.target?.result as string;
         const data = JSON.parse(content);
