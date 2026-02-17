@@ -11,7 +11,11 @@ interface CategoryManagerProps {
 }
 
 const PRESET_ICONS = ['🍔', '🚗', '🛍️', '🎬', '💡', '🏠', '🎁', '🩺', '🎓', '✈️', '🎾', '💻', '📦', '🍕', '☕', '🎵', '📱', '💳'];
-const COLORS = ['#f87171', '#60a5fa', '#c084fc', '#facc15', '#4ade80', '#94a3b8', '#fb923c', '#2dd4bf'];
+const COLORS = [
+  '#f87171', '#ef4444', '#f97316', '#fb923c', '#facc15', '#eab308', '#84cc16', '#4ade80', '#22c55e',
+  '#2dd4bf', '#14b8a6', '#06b6d4', '#60a5fa', '#3b82f6', '#6366f1', '#8b5cf6', '#c084fc', '#a855f7',
+  '#ec4899', '#94a3b8'
+];
 
 const CategoryManager: React.FC<CategoryManagerProps> = ({ categories, onAdd, onEdit, onDelete }) => {
   const [isAdding, setIsAdding] = useState(false);
