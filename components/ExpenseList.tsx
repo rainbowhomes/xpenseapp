@@ -57,7 +57,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, categories, onEdit,
             
             <div className="flex items-center gap-2 flex-shrink-0">
               <span className="font-bold text-slate-900">
-                -₹{expense.amount.toLocaleString()}
+                ₹{expense.amount.toLocaleString()}
               </span>
               {onEdit && (
                 <button 
