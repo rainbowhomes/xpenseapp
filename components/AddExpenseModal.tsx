@@ -69,9 +69,14 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ categories, initialEx
               <input 
                 type="number"
                 inputMode="decimal"
+                min="0"
+                step="0.01"
                 required
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === '' || parseFloat(v) >= 0) setAmount(v);
+                }}
                 placeholder="0.00"
                 className="w-full pl-8 pr-4 py-4 bg-slate-50 border-none rounded-2xl text-2xl font-bold focus:ring-2 focus:ring-blue-500 outline-none"
               />
@@ -80,23 +85,18 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ categories, initialEx
 
           <div className="space-y-1">
             <label className="text-xs font-bold text-slate-400 uppercase ml-1">Category</label>
-            <div className="grid grid-cols-3 gap-2">
+            <select
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+              className="w-full px-4 py-4 bg-slate-50 border-none rounded-2xl font-medium focus:ring-2 focus:ring-blue-500 outline-none appearance-none cursor-pointer"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', backgroundSize: '18px', paddingRight: '40px' }}
+            >
               {categories.map((cat) => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => setCategoryId(cat.id)}
-                  className={`flex flex-col items-center gap-1 p-3 rounded-2xl border-2 transition-all ${
-                    categoryId === cat.id 
-                    ? 'border-blue-600 bg-blue-50' 
-                    : 'border-transparent bg-slate-50 hover:bg-slate-100'
-                  }`}
-                >
-                  <span className="text-xl">{cat.icon}</span>
-                  <span className="text-[10px] font-bold text-slate-600 truncate w-full text-center">{cat.name}</span>
-                </button>
+                <option key={cat.id} value={cat.id}>
+                  {cat.icon} {cat.name}
+                </option>
               ))}
-            </div>
+            </select>
           </div>
 
           <div className="space-y-1">
