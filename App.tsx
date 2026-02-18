@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Plus, PieChart as PieChartIcon, List, Settings, ChevronRight, Download, Upload, FileSpreadsheet } from 'lucide-react';
+import { Plus, PieChart as PieChartIcon, List, Settings, ChevronRight, Download, Upload, FileSpreadsheet, Calendar } from 'lucide-react';
 import { Category, Expense } from './types';
 import { DEFAULT_CATEGORIES, STORAGE_KEY_EXPENSES, STORAGE_KEY_CATEGORIES, MONTH_NAMES } from './constants';
 import Header from './components/Header';
@@ -105,6 +105,8 @@ const App: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
   const [isAllTime, setIsAllTime] = useState(false);
+  const [historyDateFrom, setHistoryDateFrom] = useState('');
+  const [historyDateTo, setHistoryDateTo] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
 
@@ -118,6 +120,16 @@ const App: React.FC = () => {
 
   const filteredTotal = useMemo(() => filteredExpenses.reduce((sum, e) => sum + e.amount, 0), [filteredExpenses]);
   const periodLabel = isAllTime ? 'All time' : `${MONTH_NAMES[selectedMonth - 1]} ${selectedYear}`;
+
+  const historyFilteredExpenses = useMemo(() => {
+    if (!historyDateFrom && !historyDateTo) return filteredExpenses;
+    return filteredExpenses.filter(e => {
+      const d = e.date;
+      if (historyDateFrom && d < historyDateFrom) return false;
+      if (historyDateTo && d > historyDateTo) return false;
+      return true;
+    });
+  }, [filteredExpenses, historyDateFrom, historyDateTo]);
 
   // Load data from LocalStorage
   useEffect(() => {
@@ -317,8 +329,43 @@ const App: React.FC = () => {
             <h2 className="text-xl font-bold text-slate-800">
               Transaction History {periodLabel && <span className="text-slate-500 font-normal text-base">({periodLabel})</span>}
             </h2>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Calendar size={18} className="text-blue-500" />
+                <span className="text-sm font-bold text-slate-700">Filter by date</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">From</label>
+                  <input
+                    type="date"
+                    value={historyDateFrom}
+                    onChange={(e) => setHistoryDateFrom(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-slate-50 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">To</label>
+                  <input
+                    type="date"
+                    value={historyDateTo}
+                    onChange={(e) => setHistoryDateTo(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-slate-50 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+              </div>
+              {(historyDateFrom || historyDateTo) && (
+                <button
+                  type="button"
+                  onClick={() => { setHistoryDateFrom(''); setHistoryDateTo(''); }}
+                  className="mt-2 text-xs text-blue-600 font-medium"
+                >
+                  Clear date filter
+                </button>
+              )}
+            </div>
             <ExpenseList 
-              expenses={filteredExpenses} 
+              expenses={historyFilteredExpenses} 
               categories={categories}
               onEdit={(exp: Expense) => setEditingExpense(exp)}
               onDelete={deleteExpense} 
