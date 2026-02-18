@@ -40,6 +40,7 @@ function parseCsvToExpenses(
   const DATE_ALIASES = ['date', 'dates', 'transaction date', 'transaction_date'];
   const CATEGORY_ALIASES = ['category', 'categories', 'expense category', 'expense_category', 'type'];
   const AMOUNT_ALIASES = ['amount', 'amounts', 'value', 'price', 'cost', 'expense', 'debit'];
+  const DESCRIPTION_ALIASES = ['description', 'descriptions', 'note', 'notes', 'memo', 'details'];
 
   if (lines.length < 2) {
     result.errors.push('CSV must have a header row and at least one data row');
@@ -73,6 +74,7 @@ function parseCsvToExpenses(
   const dateIdx = findCol(headers, DATE_ALIASES);
   const catIdx = findCol(headers, CATEGORY_ALIASES);
   const amtIdx = findCol(headers, AMOUNT_ALIASES);
+  const descIdx = findCol(headers, DESCRIPTION_ALIASES);
 
   if (dateIdx < 0) result.errors.push('Could not detect Date column');
   if (catIdx < 0) result.errors.push('Could not detect Expense Category column');
@@ -86,7 +88,8 @@ function parseCsvToExpenses(
     const amtVal = parseAmount(cols[amtIdx] ?? '');
     const cat = matchCategory(cols[catIdx] ?? '', categories);
     if (!dateVal || !amtVal || amtVal <= 0 || !cat) { result.skipped++; continue; }
-    expenses.push({ amount: amtVal, categoryId: cat.id, description: cols[catIdx] ?? '', date: dateVal });
+    const description = descIdx >= 0 ? (cols[descIdx] ?? '').trim() : '';
+    expenses.push({ amount: amtVal, categoryId: cat.id, description, date: dateVal });
   }
   result.imported = expenses.length;
   return { expenses, ...result };
